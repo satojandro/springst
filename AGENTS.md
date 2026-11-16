@@ -27,6 +27,7 @@ Both must pass. Include in the PR description:
 ## Where things live
 
 - Policy content: `site/data/policies.js`. `PARTIES`, `AREAS` (big-four options and reading lists), `MINOR` (smaller-party options, merged into areas at load).
+- Landing page: `site/index.html`, `site/landing.css`, `site/landing.js`. Its numbers and sample question are computed from the data files, so never hard-code counts or policy text there.
 - App logic: `site/app.js`. Plain JavaScript, no framework, no build step. Keep it that way unless the roadmap says otherwise.
 - Styles: `site/styles.css`. Colours are tokens on `:root` with dark-mode overrides. **Never use party colours** (red, blue, green, orange) for options or results, because they'd un-blind the quiz.
 - AI chat: `site/ai.js` (browser side) and `worker/src/index.js` (server side; Sidekick's rules are there).

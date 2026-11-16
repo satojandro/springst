@@ -23,7 +23,7 @@ npm install
 npm run serve
 ```
 
-Then open http://localhost:8080. You can also open `site/index.html` directly in a browser.
+Then open http://localhost:8080. You can also open `site/index.html` (landing page) or `site/quiz.html` directly in a browser.
 
 Before you push, run the checks:
 
@@ -37,7 +37,9 @@ That runs `npm run validate` (data checks, including the blind-quiz rules) and `
 
 | Path | What's there |
 |---|---|
-| `site/index.html` | Page shell |
+| `site/index.html` | Landing page (`landing.css`, `landing.js`) |
+| `site/quiz.html` | The quiz (`quiz.html#start` skips the intro, `quiz.html#ballot` opens the ballot lookup) |
+| `site/footer.js` | Shared footer with the authorisation statement |
 | `site/app.js` | Rendering, state, scoring, events |
 | `site/styles.css` | All styles, light and dark |
 | `site/ai.js` | AI adapter: Claude in an artifact, the worker on the public site, or off |

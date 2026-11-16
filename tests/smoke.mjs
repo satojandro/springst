@@ -10,7 +10,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = path.join(ROOT, "test-results");
 fs.mkdirSync(OUT, { recursive: true });
-const PAGE_URL = pathToFileURL(path.join(ROOT, "site", "index.html")).href;
+const PAGE_URL = pathToFileURL(path.join(ROOT, "site", "quiz.html")).href;
+const LANDING_URL = pathToFileURL(path.join(ROOT, "site", "index.html")).href;
 
 const failures = [];
 const check = (cond, msg) => { if (!cond) failures.push(msg); console.log(`${cond ? "ok  " : "FAIL"} ${msg}`); };
@@ -60,6 +61,37 @@ for (const scheme of ["light", "dark"]) {
   check(errors.length === 0, `${scheme}: no page errors ${errors.length ? JSON.stringify(errors) : ""}`);
   await page.close();
 }
+// Landing page: renders from data, sample question works, CTA starts the quiz, postcode reaches the ballot.
+for (const [scheme, width] of [["light", 400], ["dark", 1280]]) {
+  const page = await browser.newPage({ viewport: { width, height: 900 }, colorScheme: scheme });
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("console", (m) => { if (m.type() === "error" && !/fonts\.(googleapis|gstatic)/.test(m.text())) errors.push(m.text()); });
+  await page.goto(LANDING_URL);
+  check((await page.textContent("h1")).includes("Not parties"), `landing ${scheme}/${width}: hero renders`);
+  check((await page.textContent('[data-stat="districts"]')).trim() === "88", `landing ${scheme}/${width}: stats come from the data`);
+  check((await page.locator("#lp-areas li").count()) === 10, `landing ${scheme}/${width}: lists all 10 policy areas`);
+  const sampleText = await page.textContent("#lp-sample-opts");
+  check(!/\b(Labor|Liberal|Greens|One Nation)\b/.test(sampleText), `landing ${scheme}/${width}: sample options stay blind`);
+  await page.locator(".lp-opt").first().click();
+  check(await page.isVisible("#lp-sample-go"), `landing ${scheme}/${width}: picking a sample option offers the reveal`);
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+  check(!overflow, `landing ${scheme}/${width}: no horizontal scroll`);
+  await page.screenshot({ path: path.join(OUT, `landing-${scheme}-${width}.png`), fullPage: true });
+
+  await page.fill("#lp-pc", "3101");
+  await page.click("#lp-pc-form button");
+  await page.waitForSelector(".dhead h3", { timeout: 5000 }).catch(() => {});
+  check((await page.textContent(".dhead h3").catch(() => "")).trim() === "Kew", `landing ${scheme}/${width}: postcode 3101 opens the Kew ballot`);
+
+  await page.goto(LANDING_URL);
+  await page.click(".lp-hero .lp-cta");
+  await page.waitForSelector(".opt", { timeout: 5000 }).catch(() => {});
+  check((await page.locator(".opt").count()) >= 4, `landing ${scheme}/${width}: Start the quiz opens screen 1`);
+  check(errors.length === 0, `landing ${scheme}/${width}: no page errors ${errors.length ? JSON.stringify(errors) : ""}`);
+  await page.close();
+}
+
 // Public-site AI path: serve over a fake origin, point config at a mocked endpoint, send a message.
 {
   const page = await browser.newPage({ viewport: { width: 400, height: 860 } });
@@ -79,7 +111,7 @@ for (const scheme of ["light", "dark"]) {
     sent = JSON.parse(route.request().postData());
     route.fulfill({ contentType: "application/json", body: JSON.stringify({ text: "Here are the trade-offs." }) });
   });
-  await page.goto("https://springst.test/index.html");
+  await page.goto("https://springst.test/quiz.html");
   await page.click("[data-act=start]");
   await page.click("[data-tab=chat]");
   await page.fill("[data-form] input", "What are the trade-offs?");

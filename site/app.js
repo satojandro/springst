@@ -105,7 +105,7 @@ function daysLeft(){ const d = Math.ceil((ELECTION - new Date())/86400000); retu
 
 function topBar(){
   const prog = S.screen==="q" || S.screen==="results" ? `<div class="progress" aria-label="Progress">${AREAS.map((a,k)=>`<span class="${S.screen==='results'||S.picks[a.id]? 'done':''} ${S.screen==='q'&&k===S.i?'now':''}"></span>`).join("")}</div>` : "";
-  return `<div class="top"><div class="brand"><span class="dot"></span>Spring St Blind Date</div><span class="countdown">${daysLeft()}</span></div>${prog}`;
+  return `<div class="top"><a class="brand" href="index.html"><span class="dot"></span>Spring St Blind Date</a><span class="countdown">${daysLeft()}</span></div>${prog}`;
 }
 
 function intro(){
@@ -428,16 +428,16 @@ function confetti(){
   let f=0; (function tick(){ x.clearRect(0,0,W,H); P.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.a+=.1; x.save(); x.translate(p.x,p.y); x.rotate(p.a); x.fillStyle=p.c; x.fillRect(-p.r/2,-p.r/4,p.r,p.r/2); x.restore();}); if(++f<170) requestAnimationFrame(tick); else x.clearRect(0,0,W,H); })();
 }
 
+/* Entry points from the landing page: quiz.html#start and quiz.html#ballot.
+   A postcode typed on the landing page arrives via sessionStorage. */
+function routeFromHash(){
+  const h = location.hash.slice(1);
+  if(h==="start" && S.screen!=="q" && S.screen!=="results"){ S.screen="q"; const n=AREAS.findIndex(x=>!S.picks[x.id]); S.i = n<0 ? 0 : n; }
+  if(h==="ballot"){
+    S.screen="ballot";
+    try{ const pc = sessionStorage.getItem("ssbd-pending-pc"); if(pc){ sessionStorage.removeItem("ssbd-pending-pc"); S.pc = pc; S.district = BALLOT.p[pc] ? BALLOT.p[pc][0][0] : null; } }catch(e){}
+  }
+  if(h) history.replaceState(null, "", location.pathname);
+}
+routeFromHash();
 render();
-
-/* Footer: electoral authorisation, sources and where to report errors. */
-(function renderFooter(){
-  const cfg = window.SPRINGST_CONFIG || {};
-  const f = document.getElementById("site-footer"); if(!f) return;
-  f.innerHTML = `
-    ${cfg.authorisation ? `<p class="auth">${esc(cfg.authorisation)}</p>` : ""}
-    <p>Independent and non-partisan. Not affiliated with any party, candidate or the VEC. Policy summaries from the
-      <a href="${TRACKER.u}" target="_blank" rel="noopener">ABC policy tracker</a> and
-      <a href="${MINOR_EXPLAINER.u}" target="_blank" rel="noopener">minor parties explainer</a>; candidates from the ABC election guide; postcodes from the ABS.</p>
-    ${cfg.repoUrl ? `<p>Spotted an error? <a href="${esc(cfg.repoUrl)}/issues/new/choose" target="_blank" rel="noopener">Report it</a> · <a href="${esc(cfg.repoUrl)}" target="_blank" rel="noopener">Source code</a></p>` : ""}`;
-})();

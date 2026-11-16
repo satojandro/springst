@@ -6,22 +6,149 @@
 <title>Spring St Blind Date</title>
 <meta name="description" content="A blind policy quiz for the 2026 Victorian state election. Pick policies without party names, then see who's behind them and who's on your ballot.">
 <meta property="og:title" content="Spring St Blind Date">
-<meta property="og:description" content="Which Victorian party actually agrees with you? Pick policies blind, then see the reveal.">
+<meta property="og:description" content="Pick policies, not parties. A blind quiz for the Victorian state election on 28 November 2026.">
+<meta property="og:type" content="website">
 <meta name="color-scheme" content="light dark">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="landing.css">
 </head>
-<body>
-<canvas id="confetti" aria-hidden="true"></canvas>
-<div class="wrap" id="app"><p>Loading the quiz…</p><noscript>This quiz needs JavaScript.</noscript></div>
+<body class="lp-body">
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="lp-top">
+  <a class="brand" href="index.html"><span class="dot"></span>Spring St Blind Date</a>
+  <nav class="lp-nav" aria-label="Main">
+    <a href="#how">How it works</a>
+    <a href="#ballot">Your ballot</a>
+    <a href="#faq">FAQ</a>
+    <a class="btn small primary" href="quiz.html#start">Take the quiz</a>
+  </nav>
+</header>
+
+<main id="main">
+  <!-- Hero: the thesis, plus a real blind question you can play with -->
+  <section class="lp-hero">
+    <div class="lp-hero-copy">
+      <p class="eyebrow">Victorian state election · Saturday 28 November 2026 · <span id="lp-days">Election day is coming</span></p>
+      <h1>Pick policies.<br><mark>Not parties.</mark></h1>
+      <p class="lede">Ten policy areas. Real plans from the big parties and the smaller ones. No logos, no names, no leader headshots, until the big reveal.</p>
+      <div class="cta-row">
+        <a class="btn primary lp-cta" href="quiz.html#start">Start the quiz</a>
+        <a class="btn" href="#ballot">Who's on my ballot?</a>
+      </div>
+      <p class="fine">About 6 minutes. Nothing to sign up for. Your answers stay on your device.</p>
+    </div>
+
+    <div class="lp-sample" aria-labelledby="lp-sample-title">
+      <div class="lp-sample-card card">
+        <p class="eyebrow" id="lp-sample-tag">Try one</p>
+        <h2 id="lp-sample-title">Which plan would you back?</h2>
+        <div class="lp-sample-opts" id="lp-sample-opts" role="group" aria-label="Sample options"></div>
+        <p class="lp-sample-msg" id="lp-sample-msg" aria-live="polite">Tap the one you like. No peeking at who's behind it.</p>
+        <div class="lp-sample-foot">
+          <button class="ghost" id="lp-shuffle" type="button">Show me another</button>
+          <a class="btn small" id="lp-sample-go" href="quiz.html#start" hidden>Find out who's behind it</a>
+        </div>
+      </div>
+      <span class="lp-sticker" aria-hidden="true">?</span>
+    </div>
+  </section>
+
+  <!-- Numbers computed from the data files on load -->
+  <section class="lp-stats" aria-label="What's inside">
+    <div><b data-stat="areas">10</b><span>policy areas</span></div>
+    <div><b data-stat="parties">15</b><span>parties compared</span></div>
+    <div><b data-stat="candidates">1,000+</b><span>candidates</span></div>
+    <div><b data-stat="districts">88</b><span>districts</span></div>
+  </section>
+
+  <section class="lp-section" id="how" aria-labelledby="how-h">
+    <h2 id="how-h">How it works</h2>
+    <ol class="lp-steps">
+      <li class="card">
+        <span class="lp-step-n">1</span>
+        <h3>Pick blind</h3>
+        <p>One policy area per screen. Every party's plan is shuffled and labelled A, B, C. Pick the one you'd back, and say how much the issue matters to you.</p>
+      </li>
+      <li class="card">
+        <span class="lp-step-n">2</span>
+        <h3>Dig deeper if you want</h3>
+        <p>Each screen has a reading list from across the spectrum with lean labels, links to the live conversation, and an AI sidekick that argues every side.</p>
+      </li>
+      <li class="card">
+        <span class="lp-step-n">3</span>
+        <h3>The big reveal</h3>
+        <p>See which parties you matched, who was behind every option, and the real candidates on your ballot, in the order they'll appear.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="lp-section" aria-labelledby="areas-h">
+    <h2 id="areas-h">What's on the table</h2>
+    <ul class="lp-areas" id="lp-areas"></ul>
+  </section>
+
+  <section class="lp-section lp-ballot" id="ballot" aria-labelledby="ballot-h">
+    <div class="card lp-ballot-card">
+      <div class="lp-ballot-copy">
+        <h2 id="ballot-h">Who's on my ballot?</h2>
+        <p>Enter your postcode to see every candidate in your district in ballot-paper order, who holds the seat now and by how much, and your upper house region.</p>
+      </div>
+      <form class="pc-form" id="lp-pc-form">
+        <label for="lp-pc" class="eyebrow">Postcode</label>
+        <div class="pc-row">
+          <input id="lp-pc" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="e.g. 3101" autocomplete="postal-code">
+          <button class="btn primary">Show my ballot</button>
+        </div>
+        <p class="fine" id="lp-pc-msg" aria-live="polite"></p>
+      </form>
+    </div>
+  </section>
+
+  <section class="lp-section" aria-labelledby="fair-h">
+    <h2 id="fair-h">Fair by design</h2>
+    <div class="lp-fair">
+      <div><h3>Blind</h3><p>Option text never names a party, leader or slogan, and the order is shuffled for every person. An automated check blocks any change that would give the game away.</p></div>
+      <div><h3>Sourced</h3><p>Every option is a commitment the party has published, summarised from public trackers and party announcements. No position is guessed from ideology.</p></div>
+      <div><h3>Balanced</h3><p>Every plan gets the same format and tone. Reading lists mix left, right and neutral sources, labelled so you know what you're reading.</p></div>
+      <div><h3>Open</h3><p>Independent, non-partisan and open source. Anyone can check the data and report an error.</p></div>
+    </div>
+    <p class="fine lp-fair-link"><a href="https://github.com/satojandro/springst/blob/main/docs/EDITORIAL.md" target="_blank" rel="noopener">Read the editorial policy</a></p>
+  </section>
+
+  <section class="lp-section" id="faq" aria-labelledby="faq-h">
+    <h2 id="faq-h">Questions</h2>
+    <div class="lp-faq">
+      <details><summary>Will this tell me who to vote for?</summary>
+        <p>No. It shows which parties' published plans line up with your picks. Leaders, local candidates, track records and costings matter too. Treat your result as a starting point, not advice.</p></details>
+      <details><summary>Which parties are included?</summary>
+        <p>Labor, the Liberal–Nationals Coalition, the Greens and One Nation on every screen, plus 11 smaller parties wherever they've published a position. Independents don't share a platform, so the results page points you to the independents standing in your district instead.</p></details>
+      <details><summary>Where does the information come from?</summary>
+        <p>Policy summaries are based on the ABC's policy tracker and its guide to the minor parties. Candidates come from the ABC election guide, and postcodes are matched to districts using Australian Bureau of Statistics data.</p></details>
+      <details><summary>Do you store my answers?</summary>
+        <p>No. Your answers and postcode are saved only in your own browser, so you can pick up where you left off. If you use the AI chat, your messages are sent to an AI service to get a reply. Don't share personal details there.</p></details>
+      <details><summary>I found a mistake.</summary>
+        <p>Thank you. Please <a href="https://github.com/satojandro/springst/issues/new/choose" target="_blank" rel="noopener">report it</a> with a link to the source and we'll fix it quickly.</p></details>
+      <details><summary>How do I enrol or find where to vote?</summary>
+        <p>The <a href="https://www.vec.vic.gov.au" target="_blank" rel="noopener">Victorian Electoral Commission</a> has everything official: enrolment, early voting, postal votes and polling places. Voting is compulsory for enrolled Victorians.</p></details>
+    </div>
+  </section>
+
+  <section class="lp-final">
+    <h2>Ready for your blind date?</h2>
+    <a class="btn primary lp-cta" href="quiz.html#start">Start the quiz</a>
+  </section>
+</main>
+
 <footer class="site-footer" id="site-footer"></footer>
 
 <script src="config.js"></script>
 <script src="data/policies.js"></script>
 <script src="data/ballot.js"></script>
-<script src="ai.js"></script>
-<script src="app.js"></script>
+<script src="landing.js"></script>
+<script src="footer.js"></script>
 </body>
 </html>
