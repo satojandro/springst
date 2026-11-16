@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Check your enrolment or find your polling place
+    url: https://www.vec.vic.gov.au
+    about: The Victorian Electoral Commission has official information about voting.

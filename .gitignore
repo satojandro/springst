@@ -1,0 +1,9 @@
+node_modules/
+.cache/
+test-results/
+worker/dist/
+worker/.wrangler/
+worker/.dev.vars
+.env
+.DS_Store
+__pycache__/

@@ -1,0 +1,16 @@
+name: Bug or accessibility problem
+description: Something doesn't work, looks broken, or is hard to use.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      placeholder: e.g. iPhone 15, Safari; Windows, Chrome with a screen reader

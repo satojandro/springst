@@ -1,0 +1,32 @@
+name: Policy correction
+description: A policy summary, candidate or link is wrong or out of date.
+labels: ["correction", "content"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Policy area
+      options: [Energy & climate, Housing, Crime & justice, Transport, Health, Cost of living, Schools, Treaty, Animals & the bush, State debt, Candidates / ballot, Reading list, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What's wrong
+      description: Quote the text from the quiz and say what it should say instead.
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source
+      description: A link to the party's announcement, policy page, or a reputable report.
+    validations:
+      required: true
+  - type: checkboxes
+    id: neutral
+    attributes:
+      label: Neutrality
+      options:
+        - label: I'm reporting an inaccuracy, not arguing that a policy is good or bad.
+          required: true

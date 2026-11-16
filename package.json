@@ -1,0 +1,20 @@
+{
+  "name": "springst",
+  "private": true,
+  "description": "Spring St Blind Date: a blind policy quiz for the 2026 Victorian state election.",
+  "type": "module",
+  "scripts": {
+    "validate": "node scripts/validate.mjs",
+    "validate:release": "node scripts/validate.mjs --release",
+    "test": "node tests/smoke.mjs",
+    "check": "npm run validate && npm test",
+    "serve": "python3 -m http.server 8080 --directory site",
+    "data:ballot": "python3 scripts/build_ballot.py --refresh-abc"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
