@@ -133,13 +133,23 @@ function question(){
   const a = AREAS[S.i]; const ord = S.order[a.id]; const pick = S.picks[a.id]; const w = S.weight[a.id] || 2;
   const tab = S.tab[a.id] || null;
   return `${topBar()}
-  <section class="card" aria-labelledby="qh">
+  <section class="card qcard" aria-labelledby="qh">
     <div class="qhead">
       <p class="eyebrow">${S.i+1} of ${AREAS.length} · ${esc(a.tag)}</p>
       <h2 id="qh">${esc(a.title)}</h2>
       <p class="sub">${esc(a.sub)}</p>
       <p class="context"><b>Quick context:</b> ${esc(a.context)}</p>
     </div>
+    <aside class="extras" aria-label="Dig deeper">
+      <p class="eyebrow">Dig deeper</p>
+      <div class="tools">
+        ${tabBtn(a,"learn","Learn more","Articles from across the spectrum", ICON.book)}
+        ${tabBtn(a,"live","Live chatter","What people are posting now", ICON.live)}
+        ${tabBtn(a,"chat","Talk it out","Ask the AI sidekick", ICON.chat)}
+      </div>
+      ${tab? `<div id="xpanel">${tab==="learn"? learnPanel(a): tab==="live"? livePanel(a): chatPanel(a.id, a, ()=>areaPrompt(a), STARTERS)}</div>`: ""}
+    </aside>
+    <div class="qbody">
     <div class="opts" role="group" aria-label="Options from the bigger parties">
       ${ord.slice(0,4).map((p,k)=>optCard(a,p,k,pick)).join("")}
     </div>
@@ -147,25 +157,18 @@ function question(){
     <div class="opts minor" role="group" aria-label="Options from smaller parties">
       ${ord.slice(4).map((p,k)=>optCard(a,p,k+4,pick)).join("")}
     </div>`:""}
-    <div class="none-row"><button class="chip" data-pick="none" aria-pressed="${pick==='none'}">None of these feel right</button></div>
+    <div class="none-row"><button class="chip" id="pick-none" data-pick="none" aria-pressed="${pick==='none'}">None of these feel right</button></div>
     <div class="weight"><span class="label">How much does this matter to you?</span>
-      ${[[1,"Meh"],[2,"It matters"],[3,"Dealbreaker"]].map(([v,l])=>`<button class="chip" data-w="${v}" aria-pressed="${w===v}">${l}</button>`).join("")}
+      ${[[1,"Meh"],[2,"It matters"],[3,"Dealbreaker"]].map(([v,l])=>`<button class="chip" id="w-${v}" data-w="${v}" aria-pressed="${w===v}">${l}</button>`).join("")}
     </div>
     <div class="nav">
       <button class="btn small" data-act="back">${S.i===0?"Home":"Back"}</button>
       <button class="btn primary" data-act="next" ${pick?"":"disabled"}>${S.i===AREAS.length-1?"Reveal my matches":"Next"}</button>
     </div>
-  </section>
-  <section class="extras" aria-label="Dig deeper">
-    <div class="tabs" role="tablist">
-      ${tabBtn(a,"learn","Learn more", ICON.book)}
-      ${tabBtn(a,"live","Live chatter", ICON.live)}
-      ${tabBtn(a,"chat","Talk it out", ICON.chat)}
     </div>
-    ${tab==="learn"? learnPanel(a): tab==="live"? livePanel(a): tab==="chat"? chatPanel(a.id, a, ()=>areaPrompt(a), STARTERS): ""}
   </section>`;
 }
-function optCard(a,p,k,pick){ return `<button class="opt" data-pick="${p}" aria-pressed="${pick===p}">
+function optCard(a,p,k,pick){ return `<button class="opt" id="pick-${p}" data-pick="${p}" aria-pressed="${pick===p}">
         <span class="tick">YOUR PICK</span>
         <span class="letter">${LETTERS[k]}</span>
         <h3>${esc(a.opts[p].h)}</h3>
@@ -176,7 +179,10 @@ const ICON = {
   live:`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="2.5" fill="currentColor"/><path d="M7.5 7.5a6.4 6.4 0 0 0 0 9M16.5 7.5a6.4 6.4 0 0 1 0 9M4.6 4.6a10.5 10.5 0 0 0 0 14.8M19.4 4.6a10.5 10.5 0 0 1 0 14.8"/></svg>`,
   chat:`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>`
 };
-function tabBtn(a,id,label,icon){ return `<button class="tab" role="tab" data-tab="${id}" aria-selected="${S.tab[a.id]===id}">${icon}${label}</button>`; }
+function tabBtn(a,id,label,desc,icon){
+  const on = S.tab[a.id]===id;
+  return `<button class="tab" id="tab-${id}" data-tab="${id}" aria-expanded="${on}"${on?' aria-controls="xpanel"':""}>${icon}<span class="tl"><b>${label}</b><small>${desc}</small></span></button>`;
+}
 
 function spoilerGate(a, inner){
   const open = S.peek[a.id] || S.picks[a.id];
@@ -185,7 +191,7 @@ function spoilerGate(a, inner){
 }
 function learnPanel(a){
   const list = [...a.res, TRACKER, ...(minorsOf(a).length && a.id!=="bush" ? [MINOR_EXPLAINER] : []), PBO];
-  return `<div class="panel" role="tabpanel"><h3>Learn more</h3>
+  return `<div class="panel"><h3>Learn more</h3>
   <p class="note">A mix of outlets on purpose. Lean labels are a rough guide to each outlet's general reputation, not a rating of each article. "Industry" and "Advocacy" groups argue for their members.</p>
   ${spoilerGate(a, `<ul class="res">${list.map(r=>`<li><div style="min-width:0"><a href="${esc(r.u)}" target="_blank" rel="noopener">${esc(r.t)}</a><span class="src">${esc(r.s)}</span></div><span class="lean ${r.lean}">${esc(r.l)}</span></li>`).join("")}</ul>`)}
   </div>`;
@@ -198,7 +204,7 @@ function livePanel(a){
     {b:"r/melbourne · Newest", s:"What locals are saying on Reddit", u:"https://www.reddit.com/r/melbourne/search/?sort=new&q="+encodeURIComponent(a.tag.split(/[ ,&]/)[0]+" election")},
     {b:"YouTube · This week", s:"Recent videos and debate clips", u:"https://www.youtube.com/results?sp=EgQIAxAB&search_query="+encodeURIComponent(a.tag+" Victorian election 2026")}
   ];
-  return `<div class="panel" role="tabpanel"><h3><span class="pulse" aria-hidden="true"></span>Live chatter</h3>
+  return `<div class="panel"><h3><span class="pulse" aria-hidden="true"></span>Live chatter</h3>
   <p class="note">Each link opens the newest posts on this topic, live, in a new tab. Social feeds are loud and not fact-checked, so take them as vibes, not facts.</p>
   ${spoilerGate(a, `<div class="live-grid">${links.map(l=>`<a class="live" href="${esc(l.u)}" target="_blank" rel="noopener"><b>${l.b}</b><span>${esc(l.s)}</span></a>`).join("")}</div>`)}
   </div>`;
@@ -223,7 +229,7 @@ function chatPanel(key, a, buildPrompt, starters){
     </form>
     <p class="note" style="font-size:12.5px">${esc(window.SpringstAI.disclaimer())}</p>
   </div>`;
-  return `<div class="panel" role="tabpanel"><h3>Talk it out</h3>${body}</div>`;
+  return `<div class="panel"><h3>Talk it out</h3>${body}</div>`;
 }
 
 function scores(){
@@ -311,12 +317,15 @@ function results(){
     <div class="cta-row">
       <button class="btn small" data-act="review">Change answers</button>
       <button class="btn small" data-act="copy">Copy my result</button>
+      ${sampleFn && !aiDisabled ? `<button class="btn small primary" data-act="ask">Ask Sidekick about this</button>` : ""}
       <button class="ghost" data-act="reset">Start over</button>
       <span class="fine" id="copied" aria-live="polite"></span>
     </div>
   </section>
 
   ${ballotSection()}
+
+  <section id="ask">${chatPanel("results", null, resultsPrompt, RSTARTERS)}</section>
 
   <section class="card">
     <h2 style="font-size:28px">Smaller parties</h2>
@@ -343,7 +352,7 @@ function results(){
       <a class="live" href="https://www.crikey.com.au/2026/10/21/victorian-election-independent-candidates-teals-caulfield-hawthorn-kew-mornington/" target="_blank" rel="noopener"><b>Where the teals at?</b><span>Crikey on the independents' campaigns · <span class="lean left" style="font-size:10.5px;padding:1px 7px">Leans left</span></span></a>
       <a class="live" href="https://antonygreen.com.au/2026-victorian-election-pendulum/" target="_blank" rel="noopener"><b>Election pendulum</b><span>Antony Green: how close every seat is · <span class="lean neutral" style="font-size:10.5px;padding:1px 7px">Neutral</span></span></a>
     </div>
-    <p class="fine" style="margin-top:10px">Tip: ask Sidekick below "What should I ask an independent candidate?"</p>
+    <p class="fine" style="margin-top:10px">Tip: ask Sidekick above "What should I ask an independent candidate?"</p>
   </section>
 
   <section class="card">
@@ -354,8 +363,6 @@ function results(){
         <div class="rv-list">${S.order[a.id].map((k,i)=>`<div class="rv-item ${p===k?"picked":""} ${PARTIES[k].minor?"is-minor":""}"><span class="who">${LETTERS[i]} · ${PARTIES[k].name}${p===k?" · your pick":""}</span><b>${esc(a.opts[k].h)}</b></div>`).join("")}</div></div>`;}).join("")}
     </div>
   </section>
-
-  <section class="extras">${chatPanel("results", null, resultsPrompt, RSTARTERS)}</section>
 
   <section class="card fine">
     <h3 style="font-size:20px;color:var(--ink)">Before you vote</h3>
@@ -371,6 +378,7 @@ function results(){
 
 function render(){
   const focusId = document.activeElement && document.activeElement.id;
+  app.classList.toggle("wide", S.screen==="q");
   app.innerHTML = S.screen==="intro" ? intro() : S.screen==="q" ? question() : S.screen==="ballot" ? ballotScreen() : results();
   if(S.screen==="results") requestAnimationFrame(()=>document.querySelectorAll(".bar i").forEach(i=>i.style.width=i.dataset.w+"%"));
   if(focusId){ const el = document.getElementById(focusId); if(el) el.focus(); }
@@ -397,6 +405,12 @@ app.addEventListener("click", e=>{
     case "reset": S = freshState(); break;
     case "stop": ctl && ctl.abort(); return;
     case "copy": copyResult(); return;
+    case "ask": {
+      const sec = document.getElementById("ask"), inp = document.getElementById("ci-results");
+      if(sec) sec.scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto":"smooth", block:"start"});
+      if(inp) inp.focus({preventScroll:true});
+      return;
+    }
     case "ballot": S.screen="ballot"; break;
     case "home": S.screen="intro"; break;
     default: return;
