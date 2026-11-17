@@ -35,6 +35,10 @@ for (const scheme of ["light", "dark"]) {
     await page.locator(".opt").nth(screens % n).click();
     check(await page.isEnabled("[data-act=next]"), `${scheme}: Next enabled after picking on screen ${screens}`);
     if (screens === 1) {
+      const [toolsY, optsY] = await page.evaluate(() => [".tools", ".opts"].map((s) => document.querySelector(s).getBoundingClientRect().top));
+      check(toolsY < optsY, `${scheme}: Dig deeper tools sit above the options`);
+      await page.click("[data-tab=live]");
+      check(await page.$(".live-grid"), `${scheme}: Live chatter opens`);
       await page.click("[data-tab=learn]");
       check(await page.$(".res li"), `${scheme}: Learn more lists resources`);
       await page.screenshot({ path: path.join(OUT, `${scheme}-question.png`), fullPage: true });
@@ -58,38 +62,6 @@ for (const scheme of ["light", "dark"]) {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   check(!overflow, `${scheme}: no horizontal scroll at 400px`);
   check(errors.length === 0, `${scheme}: no page errors ${errors.length ? JSON.stringify(errors) : ""}`);
-  await page.close();
-}
-// Public-site AI path: serve over a fake origin, point config at a mocked endpoint, send a message.
-{
-  const page = await browser.newPage({ viewport: { width: 400, height: 860 } });
-  const errors = [];
-  page.on("pageerror", (e) => errors.push(e.message));
-  let sent = null;
-  await page.route("https://springst.test/**", (route) => {
-    const rel = new URL(route.request().url()).pathname.replace(/^\/+/, "") || "index.html";
-    const file = path.join(ROOT, "site", rel);
-    if (!fs.existsSync(file)) return route.fulfill({ status: 404, body: "" });
-    let body = fs.readFileSync(file);
-    if (rel === "config.js") body = body.toString().replace('aiEndpoint: ""', 'aiEndpoint: "https://ai.springst.test/chat"');
-    const type = rel.endsWith(".js") ? "text/javascript" : rel.endsWith(".css") ? "text/css" : "text/html";
-    route.fulfill({ body, contentType: type });
-  });
-  await page.route("https://ai.springst.test/chat", (route) => {
-    sent = JSON.parse(route.request().postData());
-    route.fulfill({ contentType: "application/json", body: JSON.stringify({ text: "Here are the trade-offs." }) });
-  });
-  await page.goto("https://springst.test/index.html");
-  await page.click("[data-act=start]");
-  await page.click("[data-tab=chat]");
-  await page.fill("[data-form] input", "What are the trade-offs?");
-  await page.click("[data-form] button");
-  await page.waitForSelector(".msg.bot >> text=Here are the trade-offs.", { timeout: 5000 }).catch(() => {});
-  check(sent && typeof sent.context === "string" && sent.messages?.at(-1)?.role === "user", "ai: chat posts {context, messages} to the endpoint");
-  check(sent && sent.context.length < 12000, `ai: context fits the worker's limit (${sent?.context.length} chars)`);
-  check(!/\b(Labor|Liberal|Greens|One Nation)\b/.test(sent?.context || ""), "ai: quiz context sent mid-quiz doesn't name parties");
-  check(await page.$(".msg.bot >> text=Here are the trade-offs."), "ai: reply is shown");
-  check(errors.length === 0, `ai: no page errors ${errors.length ? JSON.stringify(errors) : ""}`);
   await page.close();
 }
 await browser.close();

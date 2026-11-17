@@ -1,5 +1,5 @@
 /* Spring St Blind Date: app logic (rendering, state, events).
-   Data lives in data/policies.js and data/ballot.js. AI calls go through ai.js. */
+   Data lives in data/policies.js and data/ballot.js. */
 const BALLOT = window.BALLOT;
 const ABC_SEAT = slug => `https://www.abc.net.au/news/elections/vic/2026/guide/${slug}/`;
 /* ============================================================
@@ -10,91 +10,14 @@ const LETTERS = "ABCDEFGH".split("");
 function freshState(){
   return { screen:"intro", i:0,
     order: Object.fromEntries(AREAS.map(a=>[a.id, [...shuffle(MAJORS), ...shuffle(minorsOf(a))]])),
-    picks:{}, weight:{}, peek:{}, tab:{}, chats:{} };
+    picks:{}, weight:{}, peek:{}, tab:{} };
 }
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 let S;
 try{ S = JSON.parse(localStorage.getItem(KEY)) || freshState(); }catch(e){ S = freshState(); }
 if(!S.order || AREAS.some(a=>!S.order[a.id] || S.order[a.id].length!==Object.keys(a.opts).length)) S = freshState();
-S.chats = S.chats || {}; S.tab = {};
+delete S.chats; S.tab = {}; // chats: left over from when the site had an AI chat
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
-
-/* ============================================================
-   AI SIDEKICK (via ai.js: Claude in an artifact, the worker on the public site, or off)
-   ============================================================ */
-let samplePromise = window.SpringstAI.getSampler();
-let sampleFn = undefined; samplePromise.then(f=>{ sampleFn = f; if(document.querySelector("[data-chat]")) render(); });
-let aiDisabled = false; let ctl = null; let busy = false;
-
-function areaPrompt(a){
-  const ord = S.order[a.id];
-  const opts = ord.map((p,k)=>`Option ${LETTERS[k]}: "${a.opts[p].h}"\n - ${a.opts[p].b.join("\n - ")}`).join("\n\n");
-  const pick = S.picks[a.id];
-  const pickTxt = !pick ? "The user hasn't picked yet." : pick==="none" ? "The user said none of these fit." : `The user currently leans towards Option ${LETTERS[ord.indexOf(pick)]}.`;
-  return `You are "Sidekick", a friendly, even-handed explainer inside a blind policy quiz for the Victorian (Australia) state election on Saturday 28 November 2026. Today is ${new Date().toDateString()}.
-
-This screen is about: ${a.tag}. ${a.context}
-
-The user sees these options, labelled by letter only. A to D come from the bigger parties; any later letters come from smaller parties. The quiz is BLIND: never name or hint at which party is behind any option, even if you think you recognise it. If asked, say the big reveal happens at the end of the quiz.
-
-${opts}
-
-${pickTxt}
-
-How to help:
-- Help them think; never tell them what to pick or how to vote.
-- Explain trade-offs: likely costs, who benefits, who pays, what supporters and critics argue, and what evidence exists.
-- When asked to argue for or against something, steelman it fairly.
-- Keep replies under 120 words unless asked for more. Plain Australian English, warm, a little playful. No headings. Short bullet points are fine.
-- If you're unsure of a fact, or it may have changed after your training data, say so and point them to the "Learn more" tab.`;
-}
-function resultsPrompt(){
-  const lines = AREAS.map(a=>{
-    const p = S.picks[a.id];
-    const own = S.order[a.id].map(k=>`${PARTIES[k].name}: ${a.opts[k].h}`).join("; ");
-    const w = ["","low","medium","high"][S.weight[a.id]||2];
-    return `- ${a.tag} (importance ${w}). User picked: ${p&&p!=="none"?PARTIES[p].name+' ("'+a.opts[p].h+'")':"none"}. Options were ${own}.`;
-  }).join("\n");
-  const sc = scores().map(r=>`${PARTIES[r.k].name} ${r.pct}%`).join(", ") + ". Smaller parties (picked / areas they had a plan in): " + minorScores().map(r=>`${PARTIES[r.k].name} ${r.hit}/${r.of}`).join(", ");
-  return `You are "Sidekick", a friendly, even-handed explainer. The user just finished a blind policy quiz for the Victorian state election on 28 November 2026 and has now seen which party is behind each option.
-
-Their answers:
-${lines}
-
-Weighted match: ${sc}.
-
-${(()=>{ const d = S.district && BALLOT.d[S.district]; return d ? `Their district is ${S.district} (${d.m}${d.h? ", held by "+d.h:""}). Lower house candidates in ballot order: ${d.c.map(c=>c[0]+" ("+c[1]+(c[4]?", sitting MP":"")+")").join("; ")}. Upper house region: ${d.r}.` : "They haven't entered a postcode."; })()}
-
-Help them make sense of the result. Be balanced and never tell them how to vote. Useful things: point out where their picks split across parties, what tensions exist between their choices, and how preferential voting works in Victoria (numbering every box on the lower house ballot means their vote flows on by preference). Smaller parties only appeared where they have a published plan, and many only run in some districts or only in the upper house, so remind them to check who's actually on their ballot at the VEC website. Independents weren't in the quiz because they don't share a platform; suggest reading their local independents' own websites. Under 150 words unless asked for more. Plain Australian English, warm, a little playful. If unsure of a fact, say so.`;
-}
-
-async function askAI(key, text, buildPrompt){
-  if(busy || !sampleFn || aiDisabled) return;
-  const hist = S.chats[key] = S.chats[key] || [];
-  hist.push({role:"user", content:text});
-  busy = true; ctl = new AbortController();
-  const bot = {role:"assistant", content:"", pending:true};
-  hist.push(bot); render(); scrollChat();
-  try{
-    const turns = [{role:"user", content:buildPrompt()},
-      ...hist.filter(m=>!m.pending && !m.err).slice(-12)];
-    const { text:out } = await sampleFn(turns, { cache:false, modelTier:"quick", signal:ctl.signal,
-      onText:({text})=>{ bot.content = text; bot.pending = false; updateLastBubble(text); } });
-    bot.content = out; bot.pending = false;
-  }catch(e){
-    const code = e && e.code;
-    if(code==="cancelled"){ bot.content = e.text || "(stopped)"; bot.pending=false; }
-    else {
-      hist.pop();
-      if(["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(code)){ aiDisabled = true; }
-      hist.push({role:"assistant", err:true, content: code==="rate_limited" ? "Sidekick needs a breather. Try again in a minute." :
-        code==="refused" ? "Sidekick couldn't answer that one. Try rephrasing." :
-        aiDisabled ? "The AI chat is switched off for this view." : "Something went wrong reaching Claude. Tap send to try again."});
-    }
-  }finally{ busy = false; ctl = null; save(); render(); scrollChat(); }
-}
-function updateLastBubble(t){ const els = document.querySelectorAll(".msgs .msg.bot"); const el = els[els.length-1]; if(el){ el.textContent = t; scrollChat(); } }
-function scrollChat(){ const m = document.querySelector(".msgs"); if(m) m.scrollTop = m.scrollHeight; }
 
 /* ============================================================
    RENDER
@@ -118,7 +41,7 @@ function intro(){
     <div class="rules">
       <div class="rule"><b>10 screens</b><span>One area at a time. About 6 minutes.</span></div>
       <div class="rule"><b>Totally blind</b><span>Options are shuffled and unlabelled until the reveal.</span></div>
-      <div class="rule"><b>Go deeper</b><span>Articles from across the spectrum, live chatter and an AI sidekick on every screen.</span></div>
+      <div class="rule"><b>Go deeper</b><span>Articles from across the spectrum and live chatter on every screen.</span></div>
     </div>
     <div class="cta-row">
       <button class="btn primary" data-act="start">${answered? "Keep going" : "Let's go"}</button>
@@ -145,9 +68,8 @@ function question(){
       <div class="tools">
         ${tabBtn(a,"learn","Learn more","Articles from across the spectrum", ICON.book)}
         ${tabBtn(a,"live","Live chatter","What people are posting now", ICON.live)}
-        ${tabBtn(a,"chat","Talk it out","Ask the AI sidekick", ICON.chat)}
       </div>
-      ${tab? `<div id="xpanel">${tab==="learn"? learnPanel(a): tab==="live"? livePanel(a): chatPanel(a.id, a, ()=>areaPrompt(a), STARTERS)}</div>`: ""}
+      ${tab? `<div id="xpanel">${tab==="learn"? learnPanel(a): livePanel(a)}</div>`: ""}
     </aside>
     <div class="qbody">
     <div class="opts" role="group" aria-label="Options from the bigger parties">
@@ -176,8 +98,7 @@ function optCard(a,p,k,pick){ return `<button class="opt" id="pick-${p}" data-pi
       </button>`; }
 const ICON = {
   book:`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/></svg>`,
-  live:`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="2.5" fill="currentColor"/><path d="M7.5 7.5a6.4 6.4 0 0 0 0 9M16.5 7.5a6.4 6.4 0 0 1 0 9M4.6 4.6a10.5 10.5 0 0 0 0 14.8M19.4 4.6a10.5 10.5 0 0 1 0 14.8"/></svg>`,
-  chat:`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>`
+  live:`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="2.5" fill="currentColor"/><path d="M7.5 7.5a6.4 6.4 0 0 0 0 9M16.5 7.5a6.4 6.4 0 0 1 0 9M4.6 4.6a10.5 10.5 0 0 0 0 14.8M19.4 4.6a10.5 10.5 0 0 1 0 14.8"/></svg>`
 };
 function tabBtn(a,id,label,desc,icon){
   const on = S.tab[a.id]===id;
@@ -208,28 +129,6 @@ function livePanel(a){
   <p class="note">Each link opens the newest posts on this topic, live, in a new tab. Social feeds are loud and not fact-checked, so take them as vibes, not facts.</p>
   ${spoilerGate(a, `<div class="live-grid">${links.map(l=>`<a class="live" href="${esc(l.u)}" target="_blank" rel="noopener"><b>${l.b}</b><span>${esc(l.s)}</span></a>`).join("")}</div>`)}
   </div>`;
-}
-const STARTERS = ["Explain this like I'm 15","What are the trade-offs?","Which option costs the most?","Argue against my pick","What do experts say?"];
-const RSTARTERS = ["What does my result say about me?","Where did my picks clash?","How do preferences work?","What should I ask an independent candidate?"];
-function chatPanel(key, a, buildPrompt, starters){
-  const hist = S.chats[key] || [];
-  let body;
-  if(sampleFn===undefined) body = `<p class="note">Waking up Sidekick…</p>`;
-  else if(sampleFn===null || aiDisabled) body = `<p class="note">The AI chat isn't switched on for this site yet. Learn more and Live chatter still work.</p>`;
-  else body = `<div class="chat" data-chat="${key}">
-    <div class="msgs" aria-live="polite">
-      <div class="msg bot">${key==="results" ? "Want to unpack your results? Ask me anything. I'll keep it balanced." : "Hey! I'm Sidekick. I can explain any option, poke holes in it or argue the other side. I don't know which party is which either (well, I'm not telling), so ask away."}</div>
-      ${hist.map(m=>`<div class="msg ${m.err?"err":m.role==="user"?"me":"bot"}">${m.pending?"Thinking…":esc(m.content)}</div>`).join("")}
-    </div>
-    ${hist.length<2? `<div class="starters">${starters.map(s=>`<button data-starter="${esc(s)}">${esc(s)}</button>`).join("")}</div>`:""}
-    <form class="composer" data-form="${key}">
-      <label for="ci-${key}" class="eyebrow" hidden>Message</label>
-      <input id="ci-${key}" placeholder="Ask Sidekick…" autocomplete="off" ${busy?"disabled":""}>
-      ${busy? `<button type="button" class="btn small" data-act="stop">Stop</button>` : `<button class="btn small primary">Send</button>`}
-    </form>
-    <p class="note" style="font-size:12.5px">${esc(window.SpringstAI.disclaimer())}</p>
-  </div>`;
-  return `<div class="panel"><h3>Talk it out</h3>${body}</div>`;
 }
 
 function scores(){
@@ -317,15 +216,12 @@ function results(){
     <div class="cta-row">
       <button class="btn small" data-act="review">Change answers</button>
       <button class="btn small" data-act="copy">Copy my result</button>
-      ${sampleFn && !aiDisabled ? `<button class="btn small primary" data-act="ask">Ask Sidekick about this</button>` : ""}
       <button class="ghost" data-act="reset">Start over</button>
       <span class="fine" id="copied" aria-live="polite"></span>
     </div>
   </section>
 
   ${ballotSection()}
-
-  <section id="ask">${chatPanel("results", null, resultsPrompt, RSTARTERS)}</section>
 
   <section class="card">
     <h2 style="font-size:28px">Smaller parties</h2>
@@ -352,7 +248,6 @@ function results(){
       <a class="live" href="https://www.crikey.com.au/2026/10/21/victorian-election-independent-candidates-teals-caulfield-hawthorn-kew-mornington/" target="_blank" rel="noopener"><b>Where the teals at?</b><span>Crikey on the independents' campaigns · <span class="lean left" style="font-size:10.5px;padding:1px 7px">Leans left</span></span></a>
       <a class="live" href="https://antonygreen.com.au/2026-victorian-election-pendulum/" target="_blank" rel="noopener"><b>Election pendulum</b><span>Antony Green: how close every seat is · <span class="lean neutral" style="font-size:10.5px;padding:1px 7px">Neutral</span></span></a>
     </div>
-    <p class="fine" style="margin-top:10px">Tip: ask Sidekick above "What should I ask an independent candidate?"</p>
   </section>
 
   <section class="card">
@@ -382,7 +277,6 @@ function render(){
   app.innerHTML = S.screen==="intro" ? intro() : S.screen==="q" ? question() : S.screen==="ballot" ? ballotScreen() : results();
   if(S.screen==="results") requestAnimationFrame(()=>document.querySelectorAll(".bar i").forEach(i=>i.style.width=i.dataset.w+"%"));
   if(focusId){ const el = document.getElementById(focusId); if(el) el.focus(); }
-  scrollChat();
 }
 
 /* ============================================================
@@ -395,7 +289,6 @@ app.addEventListener("click", e=>{
   if(t.dataset.w){ S.weight[a.id] = +t.dataset.w; save(); render(); return; }
   if(t.dataset.district){ S.district = t.dataset.district; save(); render(); return; }
   if(t.dataset.tab){ S.tab[a.id] = S.tab[a.id]===t.dataset.tab ? null : t.dataset.tab; render(); return; }
-  if(t.dataset.starter){ const key = S.screen==="results"?"results":a.id; askAI(key, t.dataset.starter, key==="results"?resultsPrompt:()=>areaPrompt(a)); return; }
   switch(t.dataset.act){
     case "start": S.screen="q"; S.i = Math.min(AREAS.findIndex(x=>!S.picks[x.id]) < 0 ? 0 : AREAS.findIndex(x=>!S.picks[x.id]), AREAS.length-1); break;
     case "next": if(S.i<AREAS.length-1){ S.i++; } else { S.screen="results"; setTimeout(confetti, 150); } break;
@@ -403,14 +296,7 @@ app.addEventListener("click", e=>{
     case "peek": S.peek[a.id]=true; break;
     case "review": S.screen="q"; S.i=0; break;
     case "reset": S = freshState(); break;
-    case "stop": ctl && ctl.abort(); return;
     case "copy": copyResult(); return;
-    case "ask": {
-      const sec = document.getElementById("ask"), inp = document.getElementById("ci-results");
-      if(sec) sec.scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto":"smooth", block:"start"});
-      if(inp) inp.focus({preventScroll:true});
-      return;
-    }
     case "ballot": S.screen="ballot"; break;
     case "home": S.screen="intro"; break;
     default: return;
@@ -419,10 +305,7 @@ app.addEventListener("click", e=>{
 });
 app.addEventListener("submit", e=>{
   e.preventDefault(); const f = e.target; const key = f.dataset.form; const inp = f.querySelector("input");
-  if(key==="pc"){ const v = inp.value.replace(/\D/g,"").slice(0,4); S.pc = v; S.district = BALLOT.p[v] ? BALLOT.p[v][0][0] : null; save(); render(); return; }
-  const v = inp.value.trim(); if(!v) return; inp.value = "";
-  const a = AREAS[S.i];
-  askAI(key, v, key==="results"?resultsPrompt:()=>areaPrompt(a));
+  if(key==="pc"){ const v = inp.value.replace(/\D/g,"").slice(0,4); S.pc = v; S.district = BALLOT.p[v] ? BALLOT.p[v][0][0] : null; save(); render(); }
 });
 function copyResult(){
   const sc = scores();

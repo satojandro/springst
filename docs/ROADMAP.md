@@ -4,9 +4,9 @@ Polling day is **Saturday 28 November 2026**. Anything that doesn't help someone
 
 ## Done
 - Blind quiz: 10 areas, big four plus 11 smaller parties, importance weighting, results reveal.
-- Reading lists with lean labels, live-chatter links, AI sidekick per question and on results.
+- Reading lists with lean labels and live-chatter links on every question.
 - Postcode to district lookup with real ballots, upper house regions, and per-candidate match.
-- Static site, data pipeline, validation and browser tests, Pages deploy, AI worker.
+- Static site, data pipeline, validation and browser tests, Pages deploy.
 
 ## Before launch (must)
 - [ ] Authorisation statement (owner).

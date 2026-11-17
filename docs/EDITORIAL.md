@@ -1,6 +1,6 @@
 # Editorial policy
 
-The quiz only works if people trust it. These rules apply to every option, reading-list item and AI prompt.
+The quiz only works if people trust it. These rules apply to every option and reading-list item.
 
 ## 1. Sourced
 
@@ -27,11 +27,6 @@ The quiz only works if people trust it. These rules apply to every option, readi
 - Each area should have neutral sources plus at least one left-leaning and one right-leaning source.
 - Lean labels describe the outlet's general reputation, not the article: `neutral` (wire services, public broadcasters), `left`, `right`, `official` (government, parliament, electoral commission), `advocacy` (industry or interest groups), `search` (search or video links).
 - Party media releases are fine as long as they're labelled with the party's lean, and the other side gets the same.
-
-## 5. The AI sidekick
-
-- It never tells anyone how to vote, and never reveals which party is behind an option during the quiz.
-- Its rules live in `worker/src/index.js` (public site) and `site/app.js` (`areaPrompt`, `resultsPrompt`). Changes to either need maintainer review.
 
 ## Corrections
 
