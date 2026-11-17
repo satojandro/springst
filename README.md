@@ -6,7 +6,7 @@ You pick policies without seeing party names. At the end you see how you matched
 
 - **10 policy areas, one per screen.** Energy, housing, crime, transport, health, cost of living, schools, Treaty, animals and the bush, and state debt.
 - **Totally blind.** Options from Labor, the Liberal–Nationals Coalition, the Greens, One Nation and 11 smaller parties are shuffled and unlabelled until the reveal.
-- **Go deeper on every screen.** A reading list from across the spectrum with lean labels, and links to the live conversation on X, Bluesky, Reddit and YouTube.
+- **Go deeper on every screen.** A reading list from across the spectrum with lean labels, and a link to the live conversation on X. At the end, a Share on X button invites friends (it never posts your answers).
 - **Your real ballot.** Enter a postcode to see the candidates in your district in ballot-paper order, your upper house region, and how often you picked each party's plan.
 
 Independent and non-partisan. Not affiliated with any party, candidate or the Victorian Electoral Commission.

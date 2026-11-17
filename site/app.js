@@ -41,7 +41,7 @@ function intro(){
     <div class="rules">
       <div class="rule"><b>10 screens</b><span>One area at a time. About 6 minutes.</span></div>
       <div class="rule"><b>Totally blind</b><span>Options are shuffled and unlabelled until the reveal.</span></div>
-      <div class="rule"><b>Go deeper</b><span>Articles from across the spectrum and live chatter on every screen.</span></div>
+      <div class="rule"><b>Go deeper</b><span>Media from across the spectrum, labelled by lean, plus the live conversation on X.</span></div>
     </div>
     <div class="cta-row">
       <button class="btn primary" data-act="start">${answered? "Keep going" : "Let's go"}</button>
@@ -63,13 +63,9 @@ function question(){
       <p class="sub">${esc(a.sub)}</p>
       <p class="context"><b>Quick context:</b> ${esc(a.context)}</p>
     </div>
-    <aside class="extras" aria-label="Dig deeper">
-      <p class="eyebrow">Dig deeper</p>
-      <div class="tools">
-        ${tabBtn(a,"learn","Learn more","Articles from across the spectrum", ICON.book)}
-        ${tabBtn(a,"live","Live chatter","What people are posting now", ICON.live)}
-      </div>
-      ${tab? `<div id="xpanel">${tab==="learn"? learnPanel(a): livePanel(a)}</div>`: ""}
+    <aside class="extras${tab==="learn"?" open":""}" aria-labelledby="learn-h">
+      <button class="tab xtoggle" id="tab-learn" data-tab="learn" aria-expanded="${tab==="learn"}" aria-controls="xpanel">${ICON.book}<span class="tl"><b>Learn more</b><small>Media from across the spectrum, labelled by lean</small></span></button>
+      <div id="xpanel">${learnPanel(a)}</div>
     </aside>
     <div class="qbody">
     <div class="opts" role="group" aria-label="Options from the bigger parties">
@@ -97,37 +93,24 @@ function optCard(a,p,k,pick){ return `<button class="opt" id="pick-${p}" data-pi
         <ul>${a.opts[p].b.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
       </button>`; }
 const ICON = {
-  book:`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/></svg>`,
-  live:`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="2.5" fill="currentColor"/><path d="M7.5 7.5a6.4 6.4 0 0 0 0 9M16.5 7.5a6.4 6.4 0 0 1 0 9M4.6 4.6a10.5 10.5 0 0 0 0 14.8M19.4 4.6a10.5 10.5 0 0 1 0 14.8"/></svg>`
+  book:`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/></svg>`
 };
-function tabBtn(a,id,label,desc,icon){
-  const on = S.tab[a.id]===id;
-  return `<button class="tab" id="tab-${id}" data-tab="${id}" aria-expanded="${on}"${on?' aria-controls="xpanel"':""}>${icon}<span class="tl"><b>${label}</b><small>${desc}</small></span></button>`;
-}
-
-function spoilerGate(a, inner){
-  const open = S.peek[a.id] || S.picks[a.id];
-  return `${open? "" : `<div class="spoiler"><p><b>Spoiler alert.</b> Real articles name parties, which un-blinds this question. Pick first, or peek if you'd rather know.</p><button class="btn small" data-act="peek">Peek anyway</button></div>`}
-  <div class="${open?"":"blur"}" ${open?"":'aria-hidden="true"'}>${inner}</div>`;
-}
+/* Party and government sources name the party in the outlet itself, so they stay hidden until the reveal. */
+const NAMES_PARTY = r => /party source|government source/i.test(r.s);
 function learnPanel(a){
+  const open = S.peek[a.id] || S.picks[a.id];
   const list = [...a.res, TRACKER, ...(minorsOf(a).length && a.id!=="bush" ? [MINOR_EXPLAINER] : []), PBO];
-  return `<div class="panel"><h3>Learn more</h3>
+  const x = "https://x.com/search?f=live&q="+encodeURIComponent(a.live);
+  const row = r => open
+    ? `<li><div style="min-width:0"><a href="${esc(r.u)}" target="_blank" rel="noopener">${esc(r.t)}</a><span class="src">${esc(r.s)}</span></div><span class="lean ${r.lean}">${esc(r.l)}</span></li>`
+    : `<li><div style="min-width:0"><span class="blur ttl" aria-hidden="true">${esc(r.t)}</span><span class="src">${NAMES_PARTY(r) ? "Party or government source" : esc(r.s)}</span></div><span class="lean ${r.lean}">${esc(r.l)}</span></li>`;
+  return `<div class="panel"><h3 id="learn-h">Learn more</h3>
   <p class="note">A mix of outlets on purpose. Lean labels are a rough guide to each outlet's general reputation, not a rating of each article. "Industry" and "Advocacy" groups argue for their members.</p>
-  ${spoilerGate(a, `<ul class="res">${list.map(r=>`<li><div style="min-width:0"><a href="${esc(r.u)}" target="_blank" rel="noopener">${esc(r.t)}</a><span class="src">${esc(r.s)}</span></div><span class="lean ${r.lean}">${esc(r.l)}</span></li>`).join("")}</ul>`)}
-  </div>`;
-}
-function livePanel(a){
-  const q = a.live;
-  const links = [
-    {b:"X · Latest posts", s:"Live search of the conversation on X", u:"https://x.com/search?f=live&q="+encodeURIComponent(q)},
-    {b:"Bluesky · Latest", s:"Same topic on Bluesky", u:"https://bsky.app/search?q="+encodeURIComponent(a.tag+" Victoria election")},
-    {b:"r/melbourne · Newest", s:"What locals are saying on Reddit", u:"https://www.reddit.com/r/melbourne/search/?sort=new&q="+encodeURIComponent(a.tag.split(/[ ,&]/)[0]+" election")},
-    {b:"YouTube · This week", s:"Recent videos and debate clips", u:"https://www.youtube.com/results?sp=EgQIAxAB&search_query="+encodeURIComponent(a.tag+" Victorian election 2026")}
-  ];
-  return `<div class="panel"><h3><span class="pulse" aria-hidden="true"></span>Live chatter</h3>
-  <p class="note">Each link opens the newest posts on this topic, live, in a new tab. Social feeds are loud and not fact-checked, so take them as vibes, not facts.</p>
-  ${spoilerGate(a, `<div class="live-grid">${links.map(l=>`<a class="live" href="${esc(l.u)}" target="_blank" rel="noopener"><b>${l.b}</b><span>${esc(l.s)}</span></a>`).join("")}</div>`)}
+  ${open? "" : `<div class="spoiler"><p><b>Headlines hidden.</b> Real articles name parties, which un-blinds this question. Pick first, or peek if you'd rather know.</p><button class="btn small" data-act="peek">Peek anyway</button></div>`}
+  <ul class="res">${list.map(row).join("")}</ul>
+  ${open
+    ? `<a class="live xlink" href="${esc(x)}" target="_blank" rel="noopener"><b>Latest on X</b><span>Newest posts on this topic, live. Loud and not fact-checked: vibes, not facts.</span></a>`
+    : `<div class="live xlink is-off" aria-disabled="true"><b>Latest on X</b><span>Unlocks after you pick, because posts name parties.</span></div>`}
   </div>`;
 }
 
@@ -215,6 +198,7 @@ function results(){
     </div>
     <div class="cta-row">
       <button class="btn small" data-act="review">Change answers</button>
+      <a class="btn small primary" href="${shareUrl()}" target="_blank" rel="noopener">Share on X</a>
       <button class="btn small" data-act="copy">Copy my result</button>
       <button class="ghost" data-act="reset">Start over</button>
       <span class="fine" id="copied" aria-live="polite"></span>
@@ -307,6 +291,12 @@ app.addEventListener("submit", e=>{
   e.preventDefault(); const f = e.target; const key = f.dataset.form; const inp = f.querySelector("input");
   if(key==="pc"){ const v = inp.value.replace(/\D/g,"").slice(0,4); S.pc = v; S.district = BALLOT.p[v] ? BALLOT.p[v][0][0] : null; save(); render(); }
 });
+/* Invite only: the post doesn't include anyone's answers or matches. */
+function shareUrl(){
+  const here = /^https?:$/.test(location.protocol) ? location.origin + location.pathname : "";
+  const text = "I just did Spring St Blind Date: pick Victorian election policies without party names, then see who's behind them. Try it before 28 November #springst";
+  return "https://x.com/intent/post?text=" + encodeURIComponent(text) + (here ? "&url=" + encodeURIComponent(here) : "");
+}
 function copyResult(){
   const sc = scores();
   const txt = `My Spring St Blind Date result (Vic election 2026): ${sc.map(r=>`${PARTIES[r.k].name} ${r.pct}%`).join(" · ")}. Picked policies blind, revealed parties after.`;
