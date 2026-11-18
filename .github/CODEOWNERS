@@ -1,5 +1,4 @@
-# Policy text, AI rules and deployment config need maintainer review.
+# Policy text and deployment config need maintainer review.
 /site/data/policies.js  @satojandro
 /site/config.js         @satojandro
-/worker/                @satojandro
 /docs/EDITORIAL.md      @satojandro

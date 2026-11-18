@@ -6,7 +6,7 @@ You pick policies without seeing party names. At the end you see how you matched
 
 - **10 policy areas, one per screen.** Energy, housing, crime, transport, health, cost of living, schools, Treaty, animals and the bush, and state debt.
 - **Totally blind.** Options from Labor, the Liberal–Nationals Coalition, the Greens, One Nation and 11 smaller parties are shuffled and unlabelled until the reveal.
-- **Go deeper on every screen.** A reading list from across the spectrum with lean labels, links to the live conversation on X, Bluesky, Reddit and YouTube, and an AI sidekick to talk it through.
+- **Go deeper on every screen.** A reading list from across the spectrum with lean labels, and a link to the live conversation on X. At the end, a Share on X button invites friends (it never posts your answers).
 - **Your real ballot.** Enter a postcode to see the candidates in your district in ballot-paper order, your upper house region, and how often you picked each party's plan.
 
 Independent and non-partisan. Not affiliated with any party, candidate or the Victorian Electoral Commission.
@@ -40,14 +40,12 @@ That runs `npm run validate` (data checks, including the blind-quiz rules) and `
 | `site/index.html` | Page shell |
 | `site/app.js` | Rendering, state, scoring, events |
 | `site/styles.css` | All styles, light and dark |
-| `site/ai.js` | AI adapter: Claude in an artifact, the worker on the public site, or off |
-| `site/config.js` | Per-deployment settings: AI endpoint, **authorisation statement** |
+| `site/config.js` | Per-deployment settings: **authorisation statement**, repo link |
 | `site/data/policies.js` | Parties, policy areas, options and reading lists. **Hand-edited, reviewed carefully.** |
 | `site/data/ballot.js` | Candidates and postcodes. **Generated**, don't edit by hand. |
 | `scripts/build_ballot.py` | Rebuilds `ballot.js` from ABS and ABC sources |
 | `scripts/validate.mjs` | Data checks |
 | `tests/smoke.mjs` | End-to-end browser test |
-| `worker/` | Cloudflare Worker that proxies the AI chat (keeps the API key server-side) |
 | `docs/` | Editorial policy, data sources, deployment, roadmap |
 
 ## Contributing
@@ -63,7 +61,7 @@ See [docs/ROADMAP.md](docs/ROADMAP.md) for what's next.
 
 ## Deploying
 
-See [docs/DEPLOY.md](docs/DEPLOY.md). In short: GitHub Pages hosts the site, and an optional Cloudflare Worker runs the AI chat. **Before any public launch, set the electoral authorisation statement in `site/config.js`.**
+See [docs/DEPLOY.md](docs/DEPLOY.md). In short: GitHub Pages hosts the site. There's no server. **Before any public launch, set the electoral authorisation statement in `site/config.js`.**
 
 ## Licence
 

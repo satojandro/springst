@@ -4,9 +4,9 @@ Polling day is **Saturday 28 November 2026**. Anything that doesn't help someone
 
 ## Done
 - Blind quiz: 10 areas, big four plus 11 smaller parties, importance weighting, results reveal.
-- Reading lists with lean labels, live-chatter links, AI sidekick per question and on results.
+- Reading lists with lean labels (visible before picking, headlines hidden) and a live X search on every question; Share on X invite on results.
 - Postcode to district lookup with real ballots, upper house regions, and per-candidate match.
-- Static site, data pipeline, validation and browser tests, Pages deploy, AI worker.
+- Static site, data pipeline, validation and browser tests, Pages deploy.
 
 ## Before launch (must)
 - [ ] Authorisation statement (owner).
@@ -22,7 +22,7 @@ Polling day is **Saturday 28 November 2026**. Anything that doesn't help someone
 - [ ] Shareable links to a single question.
 
 ## Later (could)
-- [ ] Embedded live feed of posts on X. This needs the paid X API and a server. Until then the links open live searches.
+- [ ] Embedded live feed of posts on X. This needs the paid X API and a server. Until then the link opens a live search.
 - [ ] Local independents: a structured summary of each independent's published priorities, seat by seat.
 - [ ] Translations (Vietnamese, Mandarin, Arabic, Greek, Italian are among Victoria's most-spoken languages).
 - [ ] Reuse for other state and federal elections: move content to JSON and make the quiz engine election-agnostic.

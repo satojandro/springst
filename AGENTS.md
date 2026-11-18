@@ -10,7 +10,7 @@ Read this file, then [docs/EDITORIAL.md](docs/EDITORIAL.md) before touching any 
 2. **Keep the quiz blind.** Option headlines and bullets must never name or hint at a party, leader, candidate, party slogan or party colour. `npm run validate` checks for names, but you are responsible for subtler tells.
 3. **Equal treatment.** Options for the same area should be about the same length, written in the same neutral register, and described by what they *do*, not with loaded words ("radical", "common-sense", "reckless").
 4. **Never edit `site/data/ballot.js` by hand.** Regenerate it with `scripts/build_ballot.py`.
-5. **Never commit secrets.** The Anthropic API key lives only in the Cloudflare Worker (`wrangler secret put`).
+5. **Never commit secrets.** The site is fully static and needs none.
 6. **Don't change the authorisation statement** in `site/config.js`. Only the project owner sets it.
 
 ## Before you open a PR
@@ -29,7 +29,6 @@ Both must pass. Include in the PR description:
 - Policy content: `site/data/policies.js`. `PARTIES`, `AREAS` (big-four options and reading lists), `MINOR` (smaller-party options, merged into areas at load).
 - App logic: `site/app.js`. Plain JavaScript, no framework, no build step. Keep it that way unless the roadmap says otherwise.
 - Styles: `site/styles.css`. Colours are tokens on `:root` with dark-mode overrides. **Never use party colours** (red, blue, green, orange) for options or results, because they'd un-blind the quiz.
-- AI chat: `site/ai.js` (browser side) and `worker/src/index.js` (server side; Sidekick's rules are there).
 
 ## Common tasks
 

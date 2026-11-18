@@ -32,11 +32,19 @@ for (const scheme of ["light", "dark"]) {
     screens++;
     const n = await page.locator(".opt").count();
     check(n >= 4, `${scheme}: screen ${screens} shows ${n} options`);
+    if (screens === 1) {
+      const [panelY, optsY] = await page.evaluate(() => ["#tab-learn", ".opts"].map((s) => document.querySelector(s).getBoundingClientRect().top));
+      check(panelY < optsY, `${scheme}: Learn more sits above the options`);
+      await page.click("[data-tab=learn]");
+      check((await page.locator(".res .lean").count()) >= 3, `${scheme}: lean labels show before picking`);
+      check((await page.locator(".res a").count()) === 0 && (await page.locator(".res .ttl.blur").count()) >= 3, `${scheme}: headlines stay hidden before picking`);
+      check(!/media release/i.test(await page.textContent(".res")), `${scheme}: party sources aren't named before picking`);
+    }
     await page.locator(".opt").nth(screens % n).click();
     check(await page.isEnabled("[data-act=next]"), `${scheme}: Next enabled after picking on screen ${screens}`);
     if (screens === 1) {
-      await page.click("[data-tab=learn]");
-      check(await page.$(".res li"), `${scheme}: Learn more lists resources`);
+      check(await page.$(".res li a"), `${scheme}: Learn more links unlock after picking`);
+      check(/x\.com\/search/.test(await page.getAttribute("a.xlink", "href")), `${scheme}: Latest on X link unlocks after picking`);
       await page.screenshot({ path: path.join(OUT, `${scheme}-question.png`), fullPage: true });
     }
     await page.click("[data-act=next]");
@@ -45,6 +53,7 @@ for (const scheme of ["light", "dark"]) {
   check(screens === 10, `${scheme}: quiz has 10 screens (saw ${screens})`);
   check(await page.$(".bars"), `${scheme}: results show match bars`);
   check(await page.$(".rv-item"), `${scheme}: reveal lists parties behind each option`);
+  check(/^https:\/\/x\.com\/intent\/post\?text=/.test(await page.getAttribute("a[href*='intent/post']", "href") || ""), `${scheme}: results offer Share on X`);
 
   await page.fill("#pc-input", "3030");
   await page.click(".pc-form button");
@@ -60,36 +69,13 @@ for (const scheme of ["light", "dark"]) {
   check(errors.length === 0, `${scheme}: no page errors ${errors.length ? JSON.stringify(errors) : ""}`);
   await page.close();
 }
-// Public-site AI path: serve over a fake origin, point config at a mocked endpoint, send a message.
+// Wide screens: Learn more is always open in the sidebar, no click needed.
 {
-  const page = await browser.newPage({ viewport: { width: 400, height: 860 } });
-  const errors = [];
-  page.on("pageerror", (e) => errors.push(e.message));
-  let sent = null;
-  await page.route("https://springst.test/**", (route) => {
-    const rel = new URL(route.request().url()).pathname.replace(/^\/+/, "") || "index.html";
-    const file = path.join(ROOT, "site", rel);
-    if (!fs.existsSync(file)) return route.fulfill({ status: 404, body: "" });
-    let body = fs.readFileSync(file);
-    if (rel === "config.js") body = body.toString().replace('aiEndpoint: ""', 'aiEndpoint: "https://ai.springst.test/chat"');
-    const type = rel.endsWith(".js") ? "text/javascript" : rel.endsWith(".css") ? "text/css" : "text/html";
-    route.fulfill({ body, contentType: type });
-  });
-  await page.route("https://ai.springst.test/chat", (route) => {
-    sent = JSON.parse(route.request().postData());
-    route.fulfill({ contentType: "application/json", body: JSON.stringify({ text: "Here are the trade-offs." }) });
-  });
-  await page.goto("https://springst.test/index.html");
+  const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
+  await page.goto(PAGE_URL);
   await page.click("[data-act=start]");
-  await page.click("[data-tab=chat]");
-  await page.fill("[data-form] input", "What are the trade-offs?");
-  await page.click("[data-form] button");
-  await page.waitForSelector(".msg.bot >> text=Here are the trade-offs.", { timeout: 5000 }).catch(() => {});
-  check(sent && typeof sent.context === "string" && sent.messages?.at(-1)?.role === "user", "ai: chat posts {context, messages} to the endpoint");
-  check(sent && sent.context.length < 12000, `ai: context fits the worker's limit (${sent?.context.length} chars)`);
-  check(!/\b(Labor|Liberal|Greens|One Nation)\b/.test(sent?.context || ""), "ai: quiz context sent mid-quiz doesn't name parties");
-  check(await page.$(".msg.bot >> text=Here are the trade-offs."), "ai: reply is shown");
-  check(errors.length === 0, `ai: no page errors ${errors.length ? JSON.stringify(errors) : ""}`);
+  check(await page.isVisible(".res li .lean"), "desktop: Learn more is open in the sidebar by default");
+  check(!(await page.isVisible("[data-tab=learn]")), "desktop: no toggle needed");
   await page.close();
 }
 await browser.close();
